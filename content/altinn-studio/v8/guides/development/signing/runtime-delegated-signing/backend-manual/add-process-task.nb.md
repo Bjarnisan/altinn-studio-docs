@@ -64,6 +64,37 @@ Et signeringssteg kan se omtrent slik ut:
 </bpmn:task>
 ```
 
+#### Legg til en gateway etter signeringssteget
+Når en bruker utfører `reject`, sletter appen signaturene og fjerner tilgangen til dem som skal signere, uten å kontrollere signeringssteget. Deretter følger prosessen sekvensflyten ut av steget. Uten en gateway er det den samme flyten som steget bruker etter signeringen, så instansen går videre til neste steg uten signaturer. Prosessdesigneren i Altinn Studio legger `reject` på alle signeringssteg, men legger ikke til gatewayen, så den må du legge til selv.
+
+Legg til en eksklusiv gateway etter signeringssteget. Den sender `reject` tilbake til steget der brukeren fyller ut skjemaet, og alt annet videre til neste steg. Legg også til den nye flyten som `<bpmn:incoming>` på steget du sender brukeren tilbake til.
+
+{{< code-title >}}
+App/config/process/process.bpmn
+{{< /code-title >}}
+
+```xml
+<bpmn:sequenceFlow id="SequenceFlow_1if1sh9" sourceRef="SigningTask" targetRef="Gateway_Signing" />
+
+<bpmn:exclusiveGateway id="Gateway_Signing">
+  <bpmn:incoming>SequenceFlow_1if1sh9</bpmn:incoming>
+  <bpmn:outgoing>Flow_Signing_Reject</bpmn:outgoing>
+  <bpmn:outgoing>Flow_Signing_Next</bpmn:outgoing>
+</bpmn:exclusiveGateway>
+
+<!-- reject: tilbake til steget der brukeren fyller ut skjemaet -->
+<bpmn:sequenceFlow id="Flow_Signing_Reject" sourceRef="Gateway_Signing" targetRef="Task_1">
+  <bpmn:conditionExpression>["equals", ["gatewayAction"], "reject"]</bpmn:conditionExpression>
+</bpmn:sequenceFlow>
+
+<!-- Alt annet: videre til neste steg -->
+<bpmn:sequenceFlow id="Flow_Signing_Next" sourceRef="Gateway_Signing" targetRef="EndEvent_1">
+  <bpmn:conditionExpression>["notEquals", ["gatewayAction"], "reject"]</bpmn:conditionExpression>
+</bpmn:sequenceFlow>
+```
+
+Bruk `notEquals` på flyten videre. Når brukeren sender inn etter signeringen, går prosessen videre uten noen handling. Med en betingelse som `["equals", ["gatewayAction"], "sign"]` passer da ingen flyt, og prosessen stopper med en feil.
+
 #### Konfigurere miljø-spesifikke correspondence ressurser
 {{% insert "content/altinn-studio/v8/guides/development/signing/runtime-delegated-signing/backend-manual/add-process-task-environments.nb.md" %}}
 

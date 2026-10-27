@@ -57,6 +57,8 @@ Dette sikrer at sekvensflyter og diagrammet blir korrekt.
 
 Husk at oppgaven må ha en inngående og en utgående sekvensflyt.
 
+Har oppgaven `reject`, må den utgående flyten gå til en eksklusiv gateway som sender `reject` tilbake til forrige oppgave. Uten den går instansen videre til neste steg uten PDF-ene for underskjemaene når brukeren utfører `reject`. Se eksempelet på gatewayen i [Sende brukeren tilbake](/nb/altinn-studio/v8/guides/development/pdf/#sende-brukeren-tilbake).
+
 #### Parametere i subformPdfConfig
 
 | Parameter                 | Beskrivelse                                                                                                                                                                                                            |

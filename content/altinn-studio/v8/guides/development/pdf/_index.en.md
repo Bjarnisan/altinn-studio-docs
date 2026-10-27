@@ -215,7 +215,7 @@ In this file, you define the content of the PDF. You typically use the Summary2 
 
 This layout file shows content to the user if PDF generation fails, such as error messages or instructions. Feel free to customise.
 
-If you want to allow the user to abort the service task, for example to go back to the previous task, you must add the `reject` action to the process definition (see the XML examples above) and grant rights to the action in the app's access policy. Where the user is redirected depends on the sequence flows in the BPMN process.
+If you want to allow the user to abort the service task, for example to go back to the previous task, you must add the `reject` action to the process definition (see the XML examples above) and grant rights to the action in the app's access policy. Where the user is redirected depends on the sequence flows in the BPMN process, see [Send the user back](#send-the-user-back).
 
 {{< code-title >}}
   App/ui/Pdf/layouts/ServiceTask.json
@@ -278,6 +278,38 @@ If you want to allow the user to abort the service task, for example to go back 
 ```
 
 {{% /expandlarge %}}
+
+## Send the user back
+
+If the service task has the `reject` action, the user can go back when the PDF generation fails: with your own `ActionButton` in `ServiceTask.json`, or with the **Gå tilbake** button the app shows when the task has no layout set. The app then skips the service task and follows the sequence flow out of it. Without a gateway, that is the same flow the task takes after creating the PDF, so the instance moves on to the next step without the PDF.
+
+Add an exclusive gateway after the service task. It sends `reject` back to the previous task, and everything else on to the next step. Also add the new flow as `<bpmn:incoming>` on the task you send the user back to.
+
+{{< code-title >}}
+App/config/process/process.bpmn
+{{< /code-title >}}
+
+```xml
+<bpmn:sequenceFlow id="Flow_19ikt1z" sourceRef="Pdf" targetRef="Gateway_Pdf" />
+
+<bpmn:exclusiveGateway id="Gateway_Pdf">
+  <bpmn:incoming>Flow_19ikt1z</bpmn:incoming>
+  <bpmn:outgoing>Flow_Pdf_Reject</bpmn:outgoing>
+  <bpmn:outgoing>Flow_Pdf_Next</bpmn:outgoing>
+</bpmn:exclusiveGateway>
+
+<!-- reject: back to the previous task -->
+<bpmn:sequenceFlow id="Flow_Pdf_Reject" sourceRef="Gateway_Pdf" targetRef="Task_Utfylling1">
+  <bpmn:conditionExpression>["equals", ["gatewayAction"], "reject"]</bpmn:conditionExpression>
+</bpmn:sequenceFlow>
+
+<!-- Everything else: on to the next step -->
+<bpmn:sequenceFlow id="Flow_Pdf_Next" sourceRef="Gateway_Pdf" targetRef="EndEvent_1">
+  <bpmn:conditionExpression>["notEquals", ["gatewayAction"], "reject"]</bpmn:conditionExpression>
+</bpmn:sequenceFlow>
+```
+
+If the user should not be able to go back, remove `reject` from the service task instead.
 
 ## Filename
 

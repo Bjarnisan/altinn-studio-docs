@@ -47,6 +47,37 @@ Signering består av to brukerhandlinger (user actions). Dersom Altinn-brukergre
 
 Hvis du har valgt å sende signeringskvitteringer ved å spesifisere en correspondence-ressurs, finner du flere detaljer om denne konfigurasjonen [her](/nb/altinn-studio/v8/guides/development/signing/runtime-delegated-signing/#konfigurere-milj%C3%B8-spesifikke-correspondence-ressurser)
 
+#### Legg til en gateway etter signeringssteget
+Når en bruker utfører `reject`, sletter appen signaturene uten å kontrollere signeringssteget. Deretter følger prosessen sekvensflyten ut av steget. Uten en gateway er det den samme flyten som steget bruker etter signeringen, så instansen går videre til neste steg uten signaturer. Prosessdesigneren i Altinn Studio legger `reject` på alle signeringssteg, men legger ikke til gatewayen, så den må du legge til selv.
+
+Legg til en eksklusiv gateway etter signeringssteget. Den sender `reject` tilbake til steget der brukeren fyller ut skjemaet, og alt annet videre til neste steg. Legg også til den nye flyten som `<bpmn:incoming>` på steget du sender brukeren tilbake til.
+
+{{< code-title >}}
+App/config/process/process.bpmn
+{{< /code-title >}}
+
+```xml
+<bpmn:sequenceFlow id="SequenceFlow_1if1sh9" sourceRef="SigningTask" targetRef="Gateway_Signing" />
+
+<bpmn:exclusiveGateway id="Gateway_Signing">
+  <bpmn:incoming>SequenceFlow_1if1sh9</bpmn:incoming>
+  <bpmn:outgoing>Flow_Signing_Reject</bpmn:outgoing>
+  <bpmn:outgoing>Flow_Signing_Next</bpmn:outgoing>
+</bpmn:exclusiveGateway>
+
+<!-- reject: tilbake til steget der brukeren fyller ut skjemaet -->
+<bpmn:sequenceFlow id="Flow_Signing_Reject" sourceRef="Gateway_Signing" targetRef="Task_1">
+  <bpmn:conditionExpression>["equals", ["gatewayAction"], "reject"]</bpmn:conditionExpression>
+</bpmn:sequenceFlow>
+
+<!-- Alt annet: videre til neste steg -->
+<bpmn:sequenceFlow id="Flow_Signing_Next" sourceRef="Gateway_Signing" targetRef="EndEvent_1">
+  <bpmn:conditionExpression>["notEquals", ["gatewayAction"], "reject"]</bpmn:conditionExpression>
+</bpmn:sequenceFlow>
+```
+
+Bruk `notEquals` på flyten videre. Når brukeren sender inn etter signeringen, går prosessen videre uten noen handling. Med en betingelse som `["equals", ["gatewayAction"], "sign"]` passer da ingen flyt, og prosessen stopper med en feil.
+
 #### Legg til datatyper for å lagre signeringsdata
 Denne datatypen legges til i `dataTypes` i `App/config/applicationmetadata.json`.
 

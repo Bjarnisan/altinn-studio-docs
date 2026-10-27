@@ -215,7 +215,7 @@ I denne filen definerer du innholdet i PDF-en. Du bruker typisk Summary2-kompone
 
 Denne layout-filen viser innhold til brukeren dersom PDF-genereringen feiler, for eksempel feilmeldinger eller instruksjoner. Tilpass gjerne.
 
-Dersom du vil la brukeren avbryte systemoppgaven, f.eks. for å gå tilbake til forrige oppgave, må du legge til `reject`-handlingen i prosessdefinisjonen (se XML-eksemplene over) og gi rettigheter til handlingen i appens tilgangspolicy. Hvor brukeren sendes videre, avhenger av sekvensflytene i BPMN-prosessen.
+Dersom du vil la brukeren avbryte systemoppgaven, f.eks. for å gå tilbake til forrige oppgave, må du legge til `reject`-handlingen i prosessdefinisjonen (se XML-eksemplene over) og gi rettigheter til handlingen i appens tilgangspolicy. Hvor brukeren sendes videre, avhenger av sekvensflytene i BPMN-prosessen, se [Sende brukeren tilbake](#sende-brukeren-tilbake).
 
 {{< code-title >}}
   App/ui/Pdf/layouts/ServiceTask.json
@@ -278,6 +278,38 @@ Dersom du vil la brukeren avbryte systemoppgaven, f.eks. for å gå tilbake til 
 ```
 
 {{% /expandlarge %}}
+
+## Sende brukeren tilbake
+
+Har systemoppgaven handlingen `reject`, kan brukeren gå tilbake når PDF-genereringen feiler: med din egen `ActionButton` i `ServiceTask.json`, eller med knappen **Gå tilbake**, som appen viser når oppgaven ikke har et layoutsett. Appen hopper da over systemoppgaven og følger sekvensflyten ut av den. Uten en gateway er det den samme flyten som oppgaven bruker etter at PDF-en er laget, så instansen går videre til neste steg uten PDF-en.
+
+Legg til en eksklusiv gateway etter systemoppgaven. Den sender `reject` tilbake til forrige oppgave, og alt annet videre til neste steg. Legg også til den nye flyten som `<bpmn:incoming>` på oppgaven du sender brukeren tilbake til.
+
+{{< code-title >}}
+App/config/process/process.bpmn
+{{< /code-title >}}
+
+```xml
+<bpmn:sequenceFlow id="Flow_19ikt1z" sourceRef="Pdf" targetRef="Gateway_Pdf" />
+
+<bpmn:exclusiveGateway id="Gateway_Pdf">
+  <bpmn:incoming>Flow_19ikt1z</bpmn:incoming>
+  <bpmn:outgoing>Flow_Pdf_Reject</bpmn:outgoing>
+  <bpmn:outgoing>Flow_Pdf_Next</bpmn:outgoing>
+</bpmn:exclusiveGateway>
+
+<!-- reject: tilbake til forrige oppgave -->
+<bpmn:sequenceFlow id="Flow_Pdf_Reject" sourceRef="Gateway_Pdf" targetRef="Task_Utfylling1">
+  <bpmn:conditionExpression>["equals", ["gatewayAction"], "reject"]</bpmn:conditionExpression>
+</bpmn:sequenceFlow>
+
+<!-- Alt annet: videre til neste steg -->
+<bpmn:sequenceFlow id="Flow_Pdf_Next" sourceRef="Gateway_Pdf" targetRef="EndEvent_1">
+  <bpmn:conditionExpression>["notEquals", ["gatewayAction"], "reject"]</bpmn:conditionExpression>
+</bpmn:sequenceFlow>
+```
+
+Skal ikke brukeren kunne gå tilbake, fjerner du heller `reject` fra systemoppgaven.
 
 ## Filnavn
 

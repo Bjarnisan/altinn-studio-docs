@@ -61,6 +61,37 @@ If the Altinn user interface is used by the application, these actions will be t
 </bpmn:task>
 ```
 
+#### Add a gateway after the signing task
+When a user performs `reject`, the app deletes the signatures and revokes the signees' access without validating the signing task. The process then follows the sequence flow out of the task. Without a gateway, that is the same flow the task takes after signing, so the instance moves on to the next step without signatures. The process editor in Altinn Studio adds `reject` to every signing task, but not the gateway, so you must add it yourself.
+
+Add an exclusive gateway after the signing task. It sends `reject` back to the task where the user fills in the form, and everything else on to the next step. Also add the new flow as `<bpmn:incoming>` on the task you send the user back to.
+
+{{< code-title >}}
+App/config/process/process.bpmn
+{{< /code-title >}}
+
+```xml
+<bpmn:sequenceFlow id="SequenceFlow_1if1sh9" sourceRef="SigningTask" targetRef="Gateway_Signing" />
+
+<bpmn:exclusiveGateway id="Gateway_Signing">
+  <bpmn:incoming>SequenceFlow_1if1sh9</bpmn:incoming>
+  <bpmn:outgoing>Flow_Signing_Reject</bpmn:outgoing>
+  <bpmn:outgoing>Flow_Signing_Next</bpmn:outgoing>
+</bpmn:exclusiveGateway>
+
+<!-- reject: back to the task where the user fills in the form -->
+<bpmn:sequenceFlow id="Flow_Signing_Reject" sourceRef="Gateway_Signing" targetRef="Task_1">
+  <bpmn:conditionExpression>["equals", ["gatewayAction"], "reject"]</bpmn:conditionExpression>
+</bpmn:sequenceFlow>
+
+<!-- Everything else: on to the next step -->
+<bpmn:sequenceFlow id="Flow_Signing_Next" sourceRef="Gateway_Signing" targetRef="EndEvent_1">
+  <bpmn:conditionExpression>["notEquals", ["gatewayAction"], "reject"]</bpmn:conditionExpression>
+</bpmn:sequenceFlow>
+```
+
+Use `notEquals` on the flow to the next step. When the user submits after signing, the process moves on without an action. With a condition such as `["equals", ["gatewayAction"], "sign"]`, no flow matches, and the process stops with an error.
+
 #### Configure environment-specific correspondence resources
 {{% insert "content/altinn-studio/v8/guides/development/signing/runtime-delegated-signing/backend-manual/add-process-task-environments.en.md" %}}
 

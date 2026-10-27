@@ -57,6 +57,8 @@ This ensures that sequence flows and the diagram are correct.
 
 Remember that the task must have an incoming and an outgoing sequence flow.
 
+If the task has `reject`, the outgoing flow must lead to an exclusive gateway that sends `reject` back to the previous task. Without it, `reject` moves the instance on to the next step without the subform PDFs. See the gateway example in [Send the user back](/en/altinn-studio/v8/guides/development/pdf/#send-the-user-back).
+
 #### Parameters in subformPdfConfig
 
 | Parameter                 | Description                                                                                                                                                                                                 |
