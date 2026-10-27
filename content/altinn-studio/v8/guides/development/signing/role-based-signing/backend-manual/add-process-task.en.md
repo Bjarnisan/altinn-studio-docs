@@ -51,7 +51,7 @@ If you have chosen to send signing receipts by specifying a correspondence resou
 #### Add a gateway after the signing task
 When a user performs `reject`, the app deletes the signatures without validating the signing task. The process then follows the sequence flow out of the task. Without a gateway, that is the same flow the task takes after signing, so the instance moves on to the next step without signatures. The process editor in Altinn Studio adds `reject` to every signing task, but not the gateway, so you must add it yourself.
 
-Add an exclusive gateway after the signing task. It sends `reject` back to the task where the user fills in the form, and everything else on to the next step. Also add the new flow as `<bpmn:incoming>` on the task you send the user back to.
+Add an exclusive gateway after the signing task. It sends `reject` back to the task where the user fills in the form, and everything else on to the next step. You can draw the gateway in the process editor and set the condition on each arrow, or add it to `process.bpmn` as shown below. In the file, point the flow out of the signing task at the gateway, and add the new flow as `<bpmn:incoming>` on the task you send the user back to.
 
 {{< code-title >}}
 App/config/process/process.bpmn
@@ -77,7 +77,11 @@ App/config/process/process.bpmn
 </bpmn:sequenceFlow>
 ```
 
-Use `notEquals` on the flow to the next step. When the user submits after signing, the process moves on without an action. With a condition such as `["equals", ["gatewayAction"], "sign"]`, no flow matches, and the process stops with an error.
+Use `notEquals` on the flow to the next step. When the user submits after signing, the app calls process next without an action, so `gatewayAction` is empty. With a condition such as `["equals", ["gatewayAction"], "sign"]`, no flow matches, and the process stops with an error.
+
+{{% notice warning %}}
+If the signing task signs a PDF made before it, such as `ref-data-as-pdf`, the old PDF stays when you send the user back. When the user moves on again, the app adds a new PDF, and the signee signs both. Make the app delete the old PDF before it makes the new one.
+{{% /notice %}}
 
 #### Add data types for storing signing related data
 The value of the node `<altinn:signatureDataType>signatures</altinn:signatureDataType>` must match the ID of the data type you configured in the previous step.

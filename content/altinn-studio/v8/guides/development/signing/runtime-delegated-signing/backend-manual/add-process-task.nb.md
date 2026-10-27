@@ -65,9 +65,9 @@ Et signeringssteg kan se omtrent slik ut:
 ```
 
 #### Legg til en gateway etter signeringssteget
-Når en bruker utfører `reject`, sletter appen signaturene og fjerner tilgangen til dem som skal signere, uten å kontrollere signeringssteget. Deretter følger prosessen sekvensflyten ut av steget. Uten en gateway er det den samme flyten som steget bruker etter signeringen, så instansen går videre til neste steg uten signaturer. Prosessdesigneren i Altinn Studio legger `reject` på alle signeringssteg, men legger ikke til gatewayen, så den må du legge til selv.
+Når en bruker utfører `reject`, sletter appen signaturene uten å kontrollere signeringssteget. Deretter følger prosessen sekvensflyten ut av steget. Uten en gateway er det den samme flyten som steget bruker etter signeringen, så instansen går videre til neste steg uten signaturer. Prosessdesigneren i Altinn Studio legger `reject` på alle signeringssteg, men legger ikke til gatewayen, så den må du legge til selv.
 
-Legg til en eksklusiv gateway etter signeringssteget. Den sender `reject` tilbake til steget der brukeren fyller ut skjemaet, og alt annet videre til neste steg. Legg også til den nye flyten som `<bpmn:incoming>` på steget du sender brukeren tilbake til.
+Legg til en eksklusiv gateway etter signeringssteget. Den sender `reject` tilbake til steget der brukeren fyller ut skjemaet, og alt annet videre til neste steg. Du kan tegne gatewayen i prosessdesigneren og sette vilkåret på hver pil, eller legge den inn i `process.bpmn` som vist under. I filen lar du flyten ut av signeringssteget gå til gatewayen, og legger til den nye flyten som `<bpmn:incoming>` på steget du sender brukeren tilbake til.
 
 {{< code-title >}}
 App/config/process/process.bpmn
@@ -93,7 +93,11 @@ App/config/process/process.bpmn
 </bpmn:sequenceFlow>
 ```
 
-Bruk `notEquals` på flyten videre. Når brukeren sender inn etter signeringen, går prosessen videre uten noen handling. Med en betingelse som `["equals", ["gatewayAction"], "sign"]` passer da ingen flyt, og prosessen stopper med en feil.
+Bruk `notEquals` på flyten videre. Når brukeren sender inn etter signeringen, kaller appen process next uten noen handling, så `gatewayAction` er tom. Med en betingelse som `["equals", ["gatewayAction"], "sign"]` passer da ingen flyt, og prosessen stopper med en feil.
+
+{{% notice warning %}}
+Signerer signeringssteget en PDF som er laget før steget, for eksempel `ref-data-as-pdf`, blir den gamle PDF-en liggende når du sender brukeren tilbake. Når brukeren går videre igjen, lager appen en ny PDF, og den som signerer, signerer begge. Sørg for at appen sletter den gamle PDF-en før den lager den nye.
+{{% /notice %}}
 
 #### Konfigurere miljø-spesifikke correspondence ressurser
 {{% insert "content/altinn-studio/v8/guides/development/signing/runtime-delegated-signing/backend-manual/add-process-task-environments.nb.md" %}}
